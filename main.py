@@ -48,7 +48,7 @@ print("baudrate:", mcp.baudrate)
 print("state:", mcp.state)
 print("Watching for received codes")
 
-match = [Match(address=0x375, mask=0x7FF), Match(address=0x375, mask=0x7FF)]
+match = [Match(address=0x375), Match(address=0x375)]
 # match = None
 
 t = Timer(timeout=1)

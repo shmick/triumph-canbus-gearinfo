@@ -3,9 +3,7 @@ import busio
 import digitalio
 import time
 import supervisor
-
-from adafruit_mcp2515.canio import Timer, Match
-from adafruit_mcp2515.canio import RemoteTransmissionRequest, Message
+from adafruit_mcp2515.canio import Timer, Match, Message
 from adafruit_mcp2515 import MCP2515 as CAN
 
 # LoLin S2 board pins
@@ -50,7 +48,7 @@ mcp = CAN(spi, cs, baudrate=can_baudrate)
 match_ids = [Match(address=0x375, mask=0x375), Match(address=0x375, mask=0x375)]
 ignore_ids = ()
 
-debug = True
+debug = 0
 
 if debug:
     match_ids = None
@@ -68,19 +66,25 @@ def print_message(msg):
             print(f"Data: {message_str}\nList: {message_list}")
 
 
-print(f"baudrate: {mcp.baudrate}\nDebug: {debug}")
+def main_loop():
+    t = Timer(timeout=5)
+    while True:
+        if debug:
+            ticks = supervisor.ticks_ms()
+            # For debugging only - print occationally to show we're alive
+            if t.expired:
+                print(ticks)
+                t.rewind_to(1)
 
-t = Timer(timeout=5)
-while True:
-    ticks = supervisor.ticks_ms()
-    # For debugging only - print occationally to show we're alive
-    if t.expired:
-        print(ticks)
-        t.rewind_to(1)
-    with mcp.listen(matches=match_ids, timeout=1) as listener:
-        if listener.in_waiting():
-            msg = listener.receive()
-            if not debug:
-                print_message(msg)
-            elif debug and hex(msg.id) not in ignore_ids:
-                print_message(msg)
+        with mcp.listen(matches=match_ids, timeout=1) as listener:
+            if listener.in_waiting():
+                msg = listener.receive()
+                if not debug:
+                    print_message(msg)
+                elif debug and hex(msg.id) not in ignore_ids:
+                    print_message(msg)
+
+
+if __name__ == "__main__":
+    print(f"baudrate: {mcp.baudrate}\nDebug: {debug}")
+    main_loop()

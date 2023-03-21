@@ -75,8 +75,6 @@ def print_message(msg):
 print(f"Debug: {debug}")
 
 t = Timer(timeout=5)
-next_message = None
-message_num = 0
 while True:
     # For debugging only - print occationally to show we're alive
     if t.expired:

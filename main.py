@@ -46,10 +46,6 @@ can_baudrate = 1000000  # needed for Subaru
 
 mcp = CAN(spi, cs, baudrate=can_baudrate)
 
-print("baudrate:", mcp.baudrate)
-print("state:", mcp.state)
-print("Watching for received codes")
-
 
 match_ids = [Match(address=0x375, mask=0x375), Match(address=0x375, mask=0x375)]
 ignore_ids = ()
@@ -72,13 +68,14 @@ def print_message(msg):
             print(f"Data: {message_str}\nList: {message_list}")
 
 
-print(f"Debug: {debug}")
+print(f"baudrate: {mcp.baudrate}\nDebug: {debug}")
 
 t = Timer(timeout=5)
 while True:
+    ticks = supervisor.ticks_ms()
     # For debugging only - print occationally to show we're alive
     if t.expired:
-        print(supervisor.ticks_ms())
+        print(ticks)
         t.rewind_to(1)
     with mcp.listen(matches=match_ids, timeout=1) as listener:
         if listener.in_waiting():

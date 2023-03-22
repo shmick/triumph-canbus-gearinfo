@@ -41,20 +41,16 @@ spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
 
 can_baudrate = 500000
 can_baudrate = 1000000  # needed for Subaru
-
 mcp = CAN(spi, cs, baudrate=can_baudrate)
 
-
-match_ids = [Match(address=0x375, mask=0x375), Match(address=0x375, mask=0x375)]
 ignore_ids = ()
+match_id = 0x375
+match_ids = [
+    Match(address=match_id, mask=match_id),
+    Match(address=match_id, mask=match_id),
+]
 
 debug = 1
-
-
-if debug:
-    match_ids = None
-    # While determining what IDs we want to match on, keep expanding the ignore list to cut down on noise
-    ignore_ids = ("0x201", "0x202")
 
 
 def print_message(msg):
@@ -68,7 +64,6 @@ def print_message(msg):
 
 
 def main_loop():
-    t = Timer(timeout=5)
     with mcp.listen(matches=match_ids, timeout=1) as listener:
         while True:
             try:
@@ -88,4 +83,9 @@ def main_loop():
 
 if __name__ == "__main__":
     print(f"baudrate: {mcp.baudrate}\nDebug: {debug}")
+    if debug:
+        t = Timer(timeout=5)
+        match_ids = None
+        # While determining what IDs we want to match on, keep expanding the ignore list to cut down on noise
+        ignore_ids = ("0x201", "0x202")
     main_loop()

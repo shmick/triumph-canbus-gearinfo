@@ -48,7 +48,8 @@ mcp = CAN(spi, cs, baudrate=can_baudrate)
 match_ids = [Match(address=0x375, mask=0x375), Match(address=0x375, mask=0x375)]
 ignore_ids = ()
 
-debug = 0
+debug = 1
+
 
 if debug:
     match_ids = None
@@ -57,32 +58,32 @@ if debug:
 
 
 def print_message(msg):
-    msg_id = hex(msg.id)
-    print(f"ID: {msg_id}")
-    if isinstance(msg, Message):
-        if msg.data:
-            message_str = ",".join(f"0x{i:02X}" for i in msg.data)
-            message_list = [hex(i) for i in msg.data]
-            print(f"Data: {message_str}\nList: {message_list}")
+    if isinstance(msg, Message) and msg.data:
+        msg_id = hex(msg.id)
+        # msg_tuple = tuple(hex(x) for x in msg.data)
+        msg_data = tuple("0x{:02x}".format(x) for x in msg.data)
+        print(f"ID: {msg_id} Data: {msg_data}")
+        # send the data to another function for further processing
+        # process_message(msg_id, msg_tuple)
 
 
 def main_loop():
     t = Timer(timeout=5)
-    while True:
-        if debug:
-            ticks = supervisor.ticks_ms()
-            # For debugging only - print occationally to show we're alive
-            if t.expired:
-                print(ticks)
-                t.rewind_to(1)
-
-        with mcp.listen(matches=match_ids, timeout=1) as listener:
-            if listener.in_waiting():
+    with mcp.listen(matches=match_ids, timeout=1) as listener:
+        while True:
+            try:
                 msg = listener.receive()
-                if not debug:
+                if msg and (not debug or hex(msg.id) not in ignore_ids):
                     print_message(msg)
-                elif debug and hex(msg.id) not in ignore_ids:
-                    print_message(msg)
+            except TimeoutError:
+                pass
+
+            if debug:
+                ticks = supervisor.ticks_ms()
+                # For debugging only - print occationally to show we're alive
+                if t.expired:
+                    print(ticks)
+                    t.rewind_to(1)
 
 
 if __name__ == "__main__":

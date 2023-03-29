@@ -2,17 +2,17 @@ Using [CircuitPython](https://circuitpython.org/) on a [Wemos S2 Mini](https://c
 
 The CAN Bus message ID is `0x540`
 
-The gear data is located in the first byte of the message data
+The selected gear is located in the first byte of the message data, using the binary value of bits 6 to 4 
 
-|    Range   | Gear |
-|:----------:|:--:|
-|0x00 - 0x0F | N |
-|0x10 - 0x1F | 1 |
-|0x20 - 0x2F | 2 |
-|0x30 - 0x3F | 3 |
-|0x40 - 0x4F | 4 |
-|0x50 - 0x5F | 5 |
-|0x60 - 0x6F | 6 |
+|Gear| Hex Range | Binary Range        |Bits 6-4|
+|:-:|:----------:|:-------------------:|:------:|
+| N |0x00 - 0x0F | 00000000 - 00001111 |  000  |
+| 1 |0x10 - 0x1F | 00010000 - 00011111 |  001  |
+| 2 |0x20 - 0x2F | 00100000 - 00101111 |  010  |
+| 3 |0x30 - 0x3F | 00110000 - 00111111 |  011  |
+| 4 |0x40 - 0x4F | 01000000 - 01001111 |  100  |
+| 5 |0x50 - 0x5F | 01010000 - 01011111 |  101  |
+| 6 |0x60 - 0x6F | 01100000 - 01101111 |  110  |
 
 An example of a message for 5th gear
 

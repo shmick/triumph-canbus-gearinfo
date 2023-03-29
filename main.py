@@ -1,91 +1,80 @@
 import board
 import busio
 import digitalio
-import time
-import supervisor
-from adafruit_mcp2515.canio import Timer, Match, Message
+from adafruit_mcp2515.canio import Message, Match
 from adafruit_mcp2515 import MCP2515 as CAN
 
-# LoLin S2 board pins
-# D0 = board.IO5 < CS
-# D1 = IO35
-# D2 = IO33
-# D3 = IO18
-# D4 = IO16
-# D5 = IO7 < SCK
-# D6 = IO9 < MISO
-# D7 = IO11 < MOSI
-# D8 = IO13
-
-
-def blink_LED(num_blinks):
-    led = digitalio.DigitalInOut(board.LED)
-    led.direction = digitalio.Direction.OUTPUT
-
-    for i in range(num_blinks):
-        led.value = True
-        start_time = time.monotonic()
-        while (time.monotonic() - start_time) < 0.5:
-            pass
-        led.value = False
-        start_time = time.monotonic()
-        while (time.monotonic() - start_time) < 0.5:
-            pass
-
-
-blink_LED(2)
 
 cs = digitalio.DigitalInOut(board.IO5)
 cs.switch_to_output()
+# D5/IO7 = SCK, D7/IO11 = MOSI, D6/IO9 = MISO
 spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
+mcp = CAN(spi, cs, baudrate=1000000)
 
-can_baudrate = 500000
-can_baudrate = 1000000  # needed for Subaru
-mcp = CAN(spi, cs, baudrate=can_baudrate)
-
-ignore_ids = ()
-match_id = 0x375
+match_id = 0x540
 match_ids = [
-    Match(address=match_id, mask=match_id),
-    Match(address=match_id, mask=match_id),
+    Match(address=match_id, mask=0x7FF),
+    Match(address=match_id, mask=0x7FF),
 ]
 
-debug = 1
+debug_ignore_ids = ()
+debug = 0
+
+"""
+**********************************************************
+There should not be any reason to modify things below here
+**********************************************************
+"""
+
+
+def report_gear(msg_id, msg_data):
+    gear_map = {
+        0: "N",
+        1: "1",
+        2: "2",
+        3: "3",
+        4: "4",
+        5: "5",
+        6: "6",
+    }
+
+    # from https://www.triumph675.net/threads/ecu-to-dash-can-bus-message-ids.242889/
+    # byte 0 - bits 6...4 - Gear Position - 0 = N, 1-6 = gears 1-6
+
+    # turn the hex string into an integer
+    byte_0 = int(msg_data[0], 16)
+
+    # 0x70 is a mask that selects only the bits 6 to 4
+    # the >> operator shifts them to the right by 4 positions to align them with the least significant bit
+    bits_6_to_4 = (byte_0 & 0x70) >> 4
+
+    gear = gear_map.get(bits_6_to_4, "")
+    if gear:
+        if msg_id == match_id and len(msg_data) == 7:
+            print(f"*********\nGear: {gear}\n*********\n")
 
 
 def print_message(msg):
     if isinstance(msg, Message) and msg.data:
-        msg_id = hex(msg.id)
-        # msg_tuple = tuple(hex(x) for x in msg.data)
-        msg_data = tuple("0x{:02x}".format(x) for x in msg.data)
-        print(f"ID: {msg_id} Data: {msg_data}")
-        # send the data to another function for further processing
-        # process_message(msg_id, msg_tuple)
+        msg_data = tuple("0x{:02X}".format(x) for x in msg.data)
+        print(f"ID: {hex(msg.id)} Data: {msg_data}")
+        report_gear(msg.id, msg_data)
 
 
 def main_loop():
-    with mcp.listen(matches=match_ids, timeout=1) as listener:
+    with mcp.listen(matches=match_ids, timeout=0.1) as listener:
         while True:
-            try:
-                msg = listener.receive()
-                if msg and (not debug or hex(msg.id) not in ignore_ids):
-                    print_message(msg)
-            except TimeoutError:
-                pass
-
-            if debug:
-                ticks = supervisor.ticks_ms()
-                # For debugging only - print occationally to show we're alive
-                if t.expired:
-                    print(ticks)
-                    t.rewind_to(1)
+            msg = listener.receive()
+            if msg and not debug:
+                print_message(msg)
+            elif debug and msg.id not in ignore_ids:
+                print_message(msg)
 
 
 if __name__ == "__main__":
     print(f"baudrate: {mcp.baudrate}\nDebug: {debug}")
+    ignore_ids = ()
     if debug:
-        t = Timer(timeout=5)
-        match_ids = None
-        # While determining what IDs we want to match on, keep expanding the ignore list to cut down on noise
-        ignore_ids = ("0x201", "0x202")
+        ignore_ids = debug_ignore_ids
+        match_ids = []
     main_loop()

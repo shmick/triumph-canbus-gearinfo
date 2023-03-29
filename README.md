@@ -19,3 +19,5 @@ An example of a message for 5th gear
 `ID: 0x540 Data: ('0x5C', '0x2C', '0x01', '0x00', '0x00', '0x00', '0x00')`
 
 The first byte shows `0x5C` which is in the range of `0x50` to `0x5F`
+
+Credit to DickC on the [triumph675.net](https://www.triumph675.net/threads/ecu-to-dash-can-bus-message-ids.242889/) forum

@@ -17,6 +17,13 @@ match_ids = [
     Match(address=match_id, mask=0x7FF),
 ]
 
+# IO37 is connected to the gate pin of a BS170 MOSFET
+# This will control a 12v LED to indicate that the motorcycle
+# is in 6th gear
+led = digitalio.DigitalInOut(board.IO37)
+led.direction = digitalio.Direction.OUTPUT
+led.value = False
+
 debug_ignore_ids = ()
 debug = 0
 
@@ -52,6 +59,11 @@ def report_gear(msg_id, msg_data):
     if gear:
         if msg_id == match_id and len(msg_data) == 7:
             print(f"*********\nGear: {gear}\n*********\n")
+
+    if gear == "6":
+        led.value = True
+    else:
+        led.value = False
 
 
 def print_message(msg):

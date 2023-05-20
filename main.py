@@ -27,6 +27,16 @@ led.value = False
 debug_ignore_ids = ()
 debug = 0
 
+gear_map = {
+    0: "N",
+    1: "1",
+    2: "2",
+    3: "3",
+    4: "4",
+    5: "5",
+    6: "6",
+}
+
 """
 **********************************************************
 There should not be any reason to modify things below here
@@ -35,15 +45,6 @@ There should not be any reason to modify things below here
 
 
 def report_gear(msg_id, msg_data):
-    gear_map = {
-        0: "N",
-        1: "1",
-        2: "2",
-        3: "3",
-        4: "4",
-        5: "5",
-        6: "6",
-    }
 
     # from https://www.triumph675.net/threads/ecu-to-dash-can-bus-message-ids.242889/
     # byte 0 - bits 6...4 - Gear Position - 0 = N, 1-6 = gears 1-6

@@ -2,23 +2,28 @@ import board
 import canio
 import digitalio
 
-# CANbus transceiver (TJA1050)
-tx = board.IO18
-rx = board.IO16
+# Configure CANbus transceiver (TJA1050)
+tx = board.IO16  # TX pin of TJA1050
+rx = board.IO18  # RX pin of TJA1050
+match_id = 0x540  # CAN ID to
 bps = 500000
-match_id = 0x540
 
-# Setup CANbus
+# Configure external LED
+led_pin = board.IO39  # connected to Gate pin of MOSFET
+
+# **********************************************************
+# There should not be any reason to modify things below here
+# **********************************************************
+
+# Setup CANbus device and listener
 can = canio.CAN(rx=rx, tx=tx, baudrate=bps, auto_restart=True, silent=True)
 listener = can.listen(matches=[canio.Match(match_id)], timeout=0.001)
 
 print(f"Silent: {can.silent}")
 print(f"State: {can.state}")
 
-# IO37 is connected to the gate pin of a BS170 MOSFET
-# This will control a 12v LED to indicate that the motorcycle
-# is in 6th gear
-led = digitalio.DigitalInOut(board.IO37)
+# Setup LED output
+led = digitalio.DigitalInOut(led_pin)
 led.direction = digitalio.Direction.OUTPUT
 led.value = False
 
@@ -35,15 +40,8 @@ gear_map = {
     6: "6",
 }
 
-"""
-**********************************************************
-There should not be any reason to modify things below here
-**********************************************************
-"""
-
 
 def report_gear(msg_id, msg_data):
-
     # from https://www.triumph675.net/threads/ecu-to-dash-can-bus-message-ids.242889/
     # byte 0 - bits 6...4 - Gear Position - 0 = N, 1-6 = gears 1-6
 
@@ -66,24 +64,22 @@ def report_gear(msg_id, msg_data):
 
 
 def print_message(msg):
-    if isinstance(msg, Message) and msg.data:
-        msg_data = tuple("0x{:02X}".format(x) for x in msg.data)
-        print(f"ID: {hex(msg.id)} Data: {msg_data}")
-        report_gear(msg.id, msg_data)
+    msg_data = tuple("0x{:02X}".format(x) for x in msg.data)
+    print(f"ID: {hex(msg.id)} Data: {msg_data}")
+    report_gear(msg.id, msg_data)
 
 
 def main_loop():
     while True:
-    msg = listener.receive()
-    if msg and msg.id and msg.data:
-        if msg and not debug:
-            print_message(msg)
-        elif debug and msg.id not in ignore_ids:
-            print_message(msg)
+        msg = listener.receive()
+        if msg and msg.id and msg.data:
+            if msg and not debug:
+                print_message(msg)
+            elif debug and msg.id not in ignore_ids:
+                print_message(msg)
 
 
 if __name__ == "__main__":
-    print(f"baudrate: {mcp.baudrate}\nDebug: {debug}")
     ignore_ids = ()
     if debug:
         ignore_ids = debug_ignore_ids

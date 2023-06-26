@@ -3,20 +3,24 @@ import canio
 import digitalio
 
 # Configure CANbus transceiver (TJA1050)
-tx = board.IO16  # TX pin of TJA1050
-rx = board.IO18  # RX pin of TJA1050
+tx_pin = board.IO16  # TX pin of TJA1050
+rx_pin = board.IO18  # RX pin of TJA1050
 match_id = 0x540  # CAN ID to
 bps = 500000
 
 # Configure external LED
 led_pin = board.IO39  # connected to Gate pin of MOSFET
 
+# Debug = 1 will print message ID and gear info when connected via USB
+debug = 0
+debug_ignore_ids = ()
+
 # **********************************************************
 # There should not be any reason to modify things below here
 # **********************************************************
 
 # Setup CANbus device and listener
-can = canio.CAN(rx=rx, tx=tx, baudrate=bps, auto_restart=True, silent=True)
+can = canio.CAN(rx=rx_pin, tx=tx_pin, baudrate=bps, auto_restart=True, silent=True)
 listener = can.listen(matches=[canio.Match(match_id)], timeout=0.001)
 
 print(f"Silent: {can.silent}")
@@ -27,8 +31,6 @@ led = digitalio.DigitalInOut(led_pin)
 led.direction = digitalio.Direction.OUTPUT
 led.value = False
 
-debug_ignore_ids = ()
-debug = 0
 
 gear_map = {
     0: "N",
@@ -53,10 +55,10 @@ def report_gear(msg_id, msg_data):
     bits_6_to_4 = (byte_0 & 0x70) >> 4
 
     gear = gear_map.get(bits_6_to_4, "")
-    if gear:
-        if msg_id == match_id and len(msg_data) == 7:
-            print(f"*********\nGear: {gear}\n*********\n")
-
+    if debug:
+        if gear:
+            if msg_id == match_id and len(msg_data) == 7:
+                print(f"*********\nGear: {gear}\n*********\n")
     if gear == "6":
         led.value = True
     else:
@@ -65,7 +67,8 @@ def report_gear(msg_id, msg_data):
 
 def print_message(msg):
     msg_data = tuple("0x{:02X}".format(x) for x in msg.data)
-    print(f"ID: {hex(msg.id)} Data: {msg_data}")
+    if debug:
+        print(f"ID: {hex(msg.id)} Data: {msg_data}")
     report_gear(msg.id, msg_data)
 
 
@@ -83,5 +86,4 @@ if __name__ == "__main__":
     ignore_ids = ()
     if debug:
         ignore_ids = debug_ignore_ids
-        match_ids = []
     main_loop()

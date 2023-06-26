@@ -1,5 +1,4 @@
 import board
-import busio
 import digitalio
 
 # CANbus transceiver (TJA1050)

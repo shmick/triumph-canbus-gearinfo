@@ -2,6 +2,7 @@ import board
 import canio
 import digitalio
 
+
 # Configure CANbus transceiver (TJA1050)
 tx_pin = board.IO16  # TX pin of TJA1050
 rx_pin = board.IO18  # RX pin of TJA1050
@@ -19,18 +20,21 @@ debug_ignore_ids = ()
 # There should not be any reason to modify things below here
 # **********************************************************
 
+# Setup LED output
+led = digitalio.DigitalInOut(led_pin)
+led.direction = digitalio.Direction.OUTPUT
+if debug:
+    led.value = True  # Set LED on in debug mode
+else:
+    led.value = False
+
 # Setup CANbus device and listener
 can = canio.CAN(rx=rx_pin, tx=tx_pin, baudrate=bps, auto_restart=True, silent=True)
 listener = can.listen(matches=[canio.Match(match_id)], timeout=0.001)
 
-print(f"Silent: {can.silent}")
-print(f"State: {can.state}")
-
-# Setup LED output
-led = digitalio.DigitalInOut(led_pin)
-led.direction = digitalio.Direction.OUTPUT
-led.value = False
-
+print(f"CAN Bus Silent Mode: {can.silent}")
+print(f"CAN Bus State: {can.state}")
+print(f"LED is on: {led.value}")
 
 gear_map = {
     0: "N",
@@ -55,14 +59,15 @@ def report_gear(msg_id, msg_data):
     bits_6_to_4 = (byte_0 & 0x70) >> 4
 
     gear = gear_map.get(bits_6_to_4, "")
-    if debug:
-        if gear:
-            if msg_id == match_id and len(msg_data) == 7:
-                print(f"*********\nGear: {gear}\n*********\n")
     if gear == "6":
         led.value = True
     else:
         led.value = False
+    if debug:
+        if gear:
+            if msg_id == match_id and len(msg_data) == 7:
+                print(f"*********\nGear: {gear}\n*********\n")
+        print(f"LED is on: {led.value}")
 
 
 def print_message(msg):

@@ -1,7 +1,7 @@
 import board
 import canio
 import digitalio
-
+import supervisor
 
 # Configure CANbus transceiver (TJA1050)
 tx_pin = board.IO16  # TX pin of TJA1050
@@ -12,13 +12,17 @@ bps = 500000
 # Configure external LED
 led_pin = board.IO39  # connected to Gate pin of MOSFET
 
-# Debug = 1 will print message ID and gear info when connected via USB
-debug = 0
 debug_ignore_ids = ()
 
 # **********************************************************
 # There should not be any reason to modify things below here
 # **********************************************************
+
+# If USB Data is connected, enter debug mode to print data
+if supervisor.runtime.serial_connected:
+    debug = True
+else:
+    debug = False
 
 # Setup LED output
 led = digitalio.DigitalInOut(led_pin)
@@ -32,9 +36,10 @@ else:
 can = canio.CAN(rx=rx_pin, tx=tx_pin, baudrate=bps, auto_restart=True, silent=True)
 listener = can.listen(matches=[canio.Match(match_id)], timeout=0.001)
 
-print(f"CAN Bus Silent Mode: {can.silent}")
-print(f"CAN Bus State: {can.state}")
-print(f"LED is on: {led.value}")
+if debug:
+    print(f"CAN Bus Silent Mode: {can.silent}")
+    print(f"CAN Bus State: {can.state}")
+    print(f"LED is on: {led.value}")
 
 gear_map = {
     0: "N",
@@ -70,7 +75,7 @@ def report_gear(msg_id, msg_data):
         print(f"LED is on: {led.value}")
 
 
-def print_message(msg):
+def parse_message(msg):
     msg_data = tuple("0x{:02X}".format(x) for x in msg.data)
     if debug:
         print(f"ID: {hex(msg.id)} Data: {msg_data}")
@@ -82,9 +87,9 @@ def main_loop():
         msg = listener.receive()
         if msg and msg.id and msg.data:
             if msg and not debug:
-                print_message(msg)
+                parse_message(msg)
             elif debug and msg.id not in ignore_ids:
-                print_message(msg)
+                parse_message(msg)
 
 
 if __name__ == "__main__":

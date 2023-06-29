@@ -1,4 +1,4 @@
-Using [CircuitPython](https://circuitpython.org/) on a [Wemos S2 Mini](https://circuitpython.org/board/lolin_s2_mini/) with an inexpensive MCP2515 CAN Bus module (eBay, Amazon, etc ) to read the gear selection on a 2012 Triumph Thunderbird
+Using [CircuitPython](https://circuitpython.org/) on a [Wemos S2 Mini](https://circuitpython.org/board/lolin_s2_mini/) with an inexpensive TJA1050 CAN Bus transceiver (eBay, Amazon, etc ) to read the gear selection on a 2012 Triumph Thunderbird
 
 The CAN Bus message ID is `0x540`
 
